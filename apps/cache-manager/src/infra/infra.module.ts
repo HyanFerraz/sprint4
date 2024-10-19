@@ -1,32 +1,31 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheEntity } from './schemas/cache.entity';
 import configuration, { RedisConnectionOptions } from '../config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from './schemas/User';
+import { HttpModule } from '@nestjs/axios';
 import { BullModule } from '@nestjs/bullmq';
 
 @Global()
 @Module({
   imports: [
     ConfigModule.forRoot({
+      envFilePath: '.env',
       isGlobal: true,
-      envFilePath: ['.env'],
       load: [configuration],
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('mongo.uri'),
-        dbName: configService.get<string>('mongo.db_name'),
-      }),
-      inject: [ConfigService],
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      database: 'database/db.sqlite',
+      entities: [CacheEntity],
+      synchronize: true,
+      dropSchema: true,
     }),
-    MongooseModule.forFeature([
-      {
-        name: User.name,
-        schema: UserSchema,
-      },
-    ]),
+    TypeOrmModule.forFeature([CacheEntity]),
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 5,
+    }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,6 +38,6 @@ import { BullModule } from '@nestjs/bullmq';
       name: 'update-db',
     }),
   ],
-  exports: [MongooseModule, BullModule],
+  exports: [TypeOrmModule, HttpModule, BullModule],
 })
 export class InfraModule {}
