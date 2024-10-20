@@ -6,7 +6,7 @@ import { QueueService } from './services/queue.service';
 import { CacheEntity } from './infra/schemas/cache.entity';
 import { UserDto } from '@app/common/dto/User.dto';
 
-@Controller('users')
+@Controller('cache/users')
 export class CacheManagerController {
   constructor(
     private readonly cacheManagerService: CacheManagerService,
