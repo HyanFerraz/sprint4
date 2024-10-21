@@ -15,7 +15,7 @@ export class CacheManagerService {
   async getFromCache(key: string): Promise<CacheEntity> {
     const cache = await this.cacheRepository.findOne({ where: { key } });
     if (cache) {
-      return this.isCacheValid(cache) ? JSON.parse(cache.value) : null;
+      return await this.isCacheValid(cache) ? JSON.parse(cache.value) : null;
     }
     return null;
   }
@@ -45,9 +45,14 @@ export class CacheManagerService {
     }
   }
 
-  private isCacheValid(cache: CacheEntity): boolean {
+  private async isCacheValid(cache: CacheEntity): Promise<boolean> {
     const now = new Date();
     const cacheCreatedAt = new Date(cache.createdAt);
-    return now.getTime() - cacheCreatedAt.getTime() < cache.ttl;
+    if (now.getTime() - cacheCreatedAt.getTime() < cache.ttl) {
+      return true;
+    } else {
+      await this.cacheRepository.remove(cache);
+      return false
+    }
   }
 }
